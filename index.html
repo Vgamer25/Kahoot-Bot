@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kahoot Live Controller</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen p-8">
+    <div class="max-w-md mx-auto">
+        <div class="bg-slate-800 rounded-2xl p-6 shadow-2xl border border-slate-700">
+            <h1 class="text-2xl font-black mb-6 text-center text-purple-400 uppercase tracking-widest">Bot Controller</h1>
+            
+            <div id="setup-ui" class="space-y-4">
+                <input id="pin" type="number" placeholder="GAME PIN" class="w-full bg-slate-700 border border-slate-600 p-4 rounded-xl text-center text-2xl font-bold focus:ring-2 ring-purple-500 outline-none">
+                <input id="name" type="text" value="BotPlayer_1" class="w-full bg-slate-700 border border-slate-600 p-3 rounded-xl text-center outline-none">
+                <button onclick="connectBot()" class="w-full bg-purple-600 hover:bg-purple-500 py-4 rounded-xl font-bold text-lg transition-transform active:scale-95">CONNECT TO LOCALHOST</button>
+            </div>
+
+            <div id="active-ui" class="hidden space-y-4">
+                <div class="flex items-center justify-between bg-slate-900 p-4 rounded-xl">
+                    <span class="text-slate-400 font-mono">Status:</span>
+                    <span id="status-text" class="text-green-400 font-bold">READY</span>
+                </div>
+                <div id="log" class="h-64 bg-black rounded-xl p-4 font-mono text-xs overflow-y-auto space-y-1 text-blue-400">
+                    <div>[SYSTEM]: Socket initialized...</div>
+                </div>
+                <button onclick="location.reload()" class="w-full bg-red-900/50 text-red-200 py-2 rounded-lg text-sm border border-red-800">Kill Connection</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let socket;
+        function addLog(msg, type) {
+            const log = document.getElementById('log');
+            const div = document.createElement('div');
+            const colors = { success: 'text-green-400', error: 'text-red-400', info: 'text-blue-400' };
+            div.className = colors[type] || 'text-slate-300';
+            div.innerText = `> ${msg}`;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function connectBot() {
+            const pin = document.getElementById('pin').value;
+            const name = document.getElementById('name').value;
+
+            socket = io('http://localhost:3000');
+
+            socket.on('connect', () => {
+                document.getElementById('setup-ui').classList.add('hidden');
+                document.getElementById('active-ui').classList.remove('hidden');
+                addLog('Socket connected to backend', 'success');
+                socket.emit('join_game', { pin, name });
+            });
+
+            socket.on('status', (data) => {
+                document.getElementById('status-text').innerText = data.msg.toUpperCase();
+                addLog(data.msg, data.type);
+            });
+
+            socket.on('event', (data) => {
+                addLog(data.msg, data.type);
+            });
+
+            socket.on('connect_error', () => {
+                alert("Make sure your Node.js server (server.js) is running!");
+            });
+        }
+    </script>
+</body>
+</html>
