@@ -3,6 +3,11 @@ const http = require('http');
 const { Server } = require('socket.io');
 const Kahoot = require('kahoot.js-updated');
 const cors = require('cors');
+const { init } = require("@heyputer/puter.js/src/init.cjs");
+
+// Initialize Puter.js
+// Note: In a production environment, you would use process.env.PUTER_AUTH_TOKEN
+const puter = init(process.env.PUTER_AUTH_TOKEN || "");
 
 const app = express();
 app.use(cors());
@@ -20,6 +25,13 @@ io.on('connection', (socket) => {
             console.log(`Joining ${pin} as ${name}`);
             await client.join(pin, name);
             socket.emit('status', { msg: 'Joined successfully!', type: 'success' });
+            
+            // Log interaction to Puter (Example of using Puter.js)
+            try {
+                puter.print(`Bot ${name} joined game ${pin}`);
+            } catch (e) {
+                // Puter log failed (likely missing token), continue silently
+            }
         } catch (err) {
             socket.emit('status', { msg: `Join failed: ${err.description || 'Unknown error'}`, type: 'error' });
         }
